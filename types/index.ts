@@ -9,10 +9,8 @@ export interface Message {
   failed?: boolean;
   errorMessage?: string;
   actionButtons?: ActionButton[];
-  // Mystery-specific
   clue?: boolean;
   suspect?: string;
-  // Debate-specific
   convictionDelta?: number;
 }
 
@@ -43,7 +41,8 @@ export interface MysteryState {
 export interface DebateState {
   topic: string | null;
   userPosition: string | null;
-  conviction: number; // 0-100, starts at 50
+  conviction: number;
+  convictionDelta?: number;
   roundsWon: number;
   totalRounds: number;
 }
@@ -52,12 +51,9 @@ export interface AppState {
   mode: AppMode;
   messages: Message[];
   isLoading: boolean;
-  // CoFounder
   brutalMode: boolean;
   startupContext: StartupContext;
   sidebarOpen: boolean;
-  // Mystery
   mysteryState: MysteryState;
-  // Debate
   debateState: DebateState;
 }
