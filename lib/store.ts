@@ -13,7 +13,7 @@ const defaultMysteryState: MysteryState = {
 
 const defaultDebateState: DebateState = {
   topic: null, userPosition: null, conviction: 50,
-  roundsWon: 0, totalRounds: 0,
+  convictionDelta: 0, roundsWon: 0, totalRounds: 0,
 };
 
 interface AppStore extends AppState {
@@ -21,15 +21,11 @@ interface AppStore extends AppState {
   addMessage: (msg: Message) => void;
   updateLastMessage: (content: string, done?: boolean) => void;
   setLoading: (v: boolean) => void;
-  // CoFounder
   toggleBrutalMode: () => void;
   updateStartupContext: (ctx: Partial<StartupContext>) => void;
   toggleSidebar: () => void;
-  // Mystery
   updateMysteryState: (s: Partial<MysteryState>) => void;
-  // Debate
-  updateDebateState: (s: Partial<DebateState>) => void;
-  // Shared
+  updateDebateState: (s: Record<string, unknown>) => void;
   markLastMessageFailed: (errorMessage?: string) => void;
   removeLastMessage: () => void;
   clearChat: () => void;
@@ -45,7 +41,7 @@ export const useAppStore = create<AppStore>((set) => ({
   mysteryState: defaultMysteryState,
   debateState: defaultDebateState,
 
-  setMode: (mode) => set({ mode, messages: [], mysteryState: defaultMysteryState, debateState: defaultDebateState, startupContext: defaultStartupContext }),
+  setMode: (mode) => set({ mode, messages: [], mysteryState: defaultMysteryState, debateState: { ...defaultDebateState }, startupContext: defaultStartupContext }),
 
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
 
@@ -60,17 +56,25 @@ export const useAppStore = create<AppStore>((set) => ({
     }),
 
   setLoading: (isLoading) => set({ isLoading }),
-
   toggleBrutalMode: () => set((s) => ({ brutalMode: !s.brutalMode })),
   updateStartupContext: (ctx) => set((s) => ({ startupContext: { ...s.startupContext, ...ctx } })),
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
-
   updateMysteryState: (ms) => set((s) => ({ mysteryState: { ...s.mysteryState, ...ms } })),
+
   updateDebateState: (ds) => set((s) => {
-    const newConviction = Math.max(0, Math.min(100,
-      s.debateState.conviction + (ds.convictionDelta ?? 0)
-    ));
-    return { debateState: { ...s.debateState, ...ds, conviction: newConviction } };
+    const delta = typeof ds.convictionDelta === "number" ? ds.convictionDelta : 0;
+    const newConviction = Math.max(0, Math.min(100, s.debateState.conviction + delta));
+    return {
+      debateState: {
+        ...s.debateState,
+        topic: typeof ds.topic === "string" ? ds.topic : s.debateState.topic,
+        userPosition: typeof ds.userPosition === "string" ? ds.userPosition : s.debateState.userPosition,
+        roundsWon: typeof ds.roundsWon === "number" ? ds.roundsWon : s.debateState.roundsWon,
+        totalRounds: typeof ds.totalRounds === "number" ? ds.totalRounds : s.debateState.totalRounds,
+        convictionDelta: delta,
+        conviction: newConviction,
+      }
+    };
   }),
 
   markLastMessageFailed: (errorMessage) =>
@@ -90,11 +94,10 @@ export const useAppStore = create<AppStore>((set) => ({
       return { messages };
     }),
 
-  clearChat: () => set((s) => ({
+  clearChat: () => set({
     messages: [],
     mysteryState: defaultMysteryState,
     debateState: { ...defaultDebateState },
     startupContext: defaultStartupContext,
-    ...(s.mode === "mystery" ? {} : {}),
-  })),
+  }),
 }));
